@@ -1,7 +1,15 @@
-from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
+from .views import CreateDepartmentAPIView, LoginAPIView, RefreshTokenAPIView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('core.urls')),
+    path(
+        'login/',
+        LoginAPIView.as_view(),
+        name='login'
+    ),
+     path(
+        "departments/create/",
+        CreateDepartmentAPIView.as_view()
+    ),
+    path("token/refresh/", RefreshTokenAPIView.as_view()),
 ]
