@@ -93,3 +93,17 @@ class Department(models.Model):
 
     def __str__(self):
         return self.name_en
+
+class Division(models.Model):
+    department = models.ForeignKey(
+        Department, 
+        on_delete=models.CASCADE, 
+        related_name='divisions'
+    )
+    name_en = models.CharField(max_length=100)
+    name_hi = models.CharField(max_length=200, blank=True, null=True)
+    head_name = models.CharField(max_length=150, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name_en} ({self.department.name_en if self.department else 'N/A'})"

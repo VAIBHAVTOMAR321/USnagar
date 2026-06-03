@@ -1,5 +1,14 @@
 from django.urls import path
-from .views import CreateDepartmentAPIView, LoginAPIView, RefreshTokenAPIView
+from .views import (
+    CreateDepartmentAPIView, 
+    LoginAPIView, 
+    RefreshTokenAPIView,
+    DepartmentListAPIView,
+    DepartmentDetailAPIView,
+    DivisionListCreateAPIView,
+    DivisionDetailAPIView,
+    DivisionBulkUpdateHeadAPIView
+)
 
 urlpatterns = [
     path(
@@ -11,5 +20,22 @@ urlpatterns = [
         "departments/create/",
         CreateDepartmentAPIView.as_view()
     ),
+    path(
+        "departments/",
+        DepartmentListAPIView.as_view()
+    ),
+    path(
+        "departments/<int:pk>/",
+        DepartmentDetailAPIView.as_view()
+    ),
+    path(
+        "divisions/",
+        DivisionListCreateAPIView.as_view()
+    ),
+    path(
+        "divisions/<int:pk>/",
+        DivisionDetailAPIView.as_view()
+    ),
+    path("divisions/bulk-update-head/", DivisionBulkUpdateHeadAPIView.as_view()),
     path("token/refresh/", RefreshTokenAPIView.as_view()),
 ]
