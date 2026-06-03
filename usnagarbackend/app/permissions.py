@@ -46,3 +46,22 @@ class IsDivisionOwnerOrStaff(BasePermission):
         return (request.user.role == "department" and 
                 hasattr(request.user, 'department') and 
                 obj.department == request.user.department)
+    
+
+class IsDepartmentOrITCell(
+    BasePermission
+):
+
+    def has_permission(
+        self,
+        request,
+        view
+    ):
+
+        return (
+            request.user.is_authenticated
+            and request.user.role in [
+                "department",
+                "it_cell"
+            ]
+        )

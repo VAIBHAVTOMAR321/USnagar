@@ -7,7 +7,9 @@ from .views import (
     DepartmentDetailAPIView,
     DivisionListCreateAPIView,
     DivisionDetailAPIView,
-    DivisionBulkUpdateHeadAPIView
+    DivisionBulkUpdateHeadAPIView,
+    DivisionByHeadListAPIView,
+    WorkAPIView,
 )
 
 urlpatterns = [
@@ -37,5 +39,11 @@ urlpatterns = [
         DivisionDetailAPIView.as_view()
     ),
     path("divisions/bulk-update-head/", DivisionBulkUpdateHeadAPIView.as_view()),
+    path("divisions/by-head/", DivisionByHeadListAPIView.as_view()),
     path("token/refresh/", RefreshTokenAPIView.as_view()),
+
+    path(
+    "works/",
+    WorkAPIView.as_view()
+),
 ]

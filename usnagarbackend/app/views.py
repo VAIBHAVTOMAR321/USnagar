@@ -10,15 +10,17 @@ from .permissions import (
     IsITCellOrOwnDepartment, 
     IsAdminOrITCell, 
     IsDivisionOwnerOrStaff,
-    IsITCellOrDepartment
+    IsITCellOrDepartment,
+    IsDepartmentOrITCell
 )
 from .serializers import (
     LoginSerializer,
     RefreshTokenSerializer,
     DepartmentSerializer,
-    DivisionSerializer
+    DivisionSerializer,
+    WorkSerializer
 )
-from .models import Department, Division
+from .models import Department, Division, Work
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 class LoginAPIView(APIView):
@@ -53,14 +55,18 @@ class LoginAPIView(APIView):
 
         refresh = RefreshToken.for_user(user)
 
-        return Response(
-            {
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-                "role": user.role,
-                "username": user.username
-            }
-        )
+        response_data = {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "role": user.role,
+            "username": user.username
+        }
+
+        # Include department_id only for department users
+        if user.role == "department" and hasattr(user, "department"):
+            response_data["department_id"] = user.department.id
+
+        return Response(response_data)
 
 class RefreshTokenAPIView(APIView):
 
@@ -289,4 +295,187 @@ class DivisionBulkUpdateHeadAPIView(APIView):
                 "updated_ids": division_ids
             },
             status=status.HTTP_200_OK
+        )
+
+class DivisionByHeadListAPIView(APIView):
+    """
+    Returns divisions grouped by their assigned head member.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if user.role in ["admin", "it_cell"]:
+            divisions = Division.objects.all()
+        else:
+            divisions = Division.objects.filter(department__user=user)
+
+        # Grouping logic
+        grouped_data = {}
+        for div in divisions:
+            head = div.head_name or "Unassigned"
+            if head not in grouped_data:
+                grouped_data[head] = []
+            
+            grouped_data[head].append({
+                "id": div.id,
+                "name_en": div.name_en,
+                "name_hi": div.name_hi,
+                "department_name": div.department.name_en if div.department else None
+            })
+
+        formatted_response = [
+            {"head_name": head, "divisions": divs}
+            for head, divs in grouped_data.items()
+        ]
+
+        return Response(formatted_response)
+    
+class WorkAPIView(APIView):
+
+    def get_permissions(self):
+
+        if self.request.method in [
+            "POST",
+            "PUT",
+            "DELETE"
+        ]:
+            return [
+                IsDepartmentOrITCell()
+            ]
+
+        return []
+
+    def get(self, request):
+
+        work_id = request.query_params.get(
+            "id"
+        )
+
+        if work_id:
+
+            work = get_object_or_404(
+                Work,
+                id=work_id
+            )
+
+            serializer = WorkSerializer(
+                work
+            )
+
+            return Response(
+                serializer.data
+            )
+
+        works = Work.objects.all().order_by(
+            "-created_at"
+        )
+
+        serializer = WorkSerializer(
+            works,
+            many=True
+        )
+
+        return Response(
+            serializer.data
+        )
+
+    def post(self, request):
+
+        serializer = WorkSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        work = serializer.save(
+            created_by=request.user
+        )
+
+        return Response(
+            {
+                "message":
+                "Work created successfully",
+                "work_id":
+                work.work_id,
+                "data":
+                WorkSerializer(
+                    work
+                ).data
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    def put(self, request):
+
+        work_id = request.data.get(
+            "id"
+        )
+
+        if not work_id:
+
+            return Response(
+                {
+                    "message":
+                    "id is required"
+                },
+                status=400
+            )
+
+        work = get_object_or_404(
+            Work,
+            id=work_id
+        )
+
+        serializer = WorkSerializer(
+            work,
+            data=request.data,
+            partial=True
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        return Response(
+            {
+                "message":
+                "Work updated successfully",
+                "data":
+                serializer.data
+            }
+        )
+
+    def delete(self, request):
+
+        work_id = request.data.get(
+            "id"
+        )
+
+        if not work_id:
+
+            return Response(
+                {
+                    "message":
+                    "id is required"
+                },
+                status=400
+            )
+
+        work = get_object_or_404(
+            Work,
+            id=work_id
+        )
+
+        work.delete()
+
+        return Response(
+            {
+                "message":
+                "Work deleted successfully"
+            }
         )

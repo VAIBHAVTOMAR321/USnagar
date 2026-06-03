@@ -75,11 +75,33 @@ class Department(models.Model):
 
     name_en = models.CharField(
         max_length=100,
-        unique=True,blank=True,null=True
+        unique=True,
+        blank=True,
+        null=True
     )
 
     name_hi = models.CharField(
-        max_length=200,blank=True,null=True
+        max_length=200,
+        blank=True,
+        null=True
+    )
+
+    hod_name = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True
+    )
+
+    designation = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True
+    )
+
+    hod_img = models.ImageField(
+        upload_to="department_hod/",
+        blank=True,
+        null=True
     )
 
     user = models.OneToOneField(
@@ -107,3 +129,91 @@ class Division(models.Model):
 
     def __str__(self):
         return f"{self.name_en} ({self.department.name_en if self.department else 'N/A'})"
+    
+
+class Work(models.Model):
+
+    work_id = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True
+    )
+
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.CASCADE,
+        related_name="works",
+        null=True,
+        blank=True
+    )
+
+    division = models.ForeignKey(
+        Division,
+        on_delete=models.CASCADE,
+        related_name="works"
+    )
+
+    vidhan_sabha = models.CharField(
+        max_length=200
+    )
+
+    project_name = models.CharField(
+        max_length=300
+    )
+
+    village_name = models.CharField(
+        max_length=300
+    )
+
+    head_name = models.CharField(
+        max_length=200
+    )
+
+    component = models.CharField(
+        max_length=200
+    )
+
+    scheme_type = models.CharField(
+        max_length=200
+    )
+
+    work_name = models.TextField()
+
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+    def save(self, *args, **kwargs):
+
+        if not self.work_id:
+
+            last_work = Work.objects.order_by(
+                "-id"
+            ).first()
+
+            if last_work and last_work.work_id:
+
+                last_number = int(
+                    last_work.work_id.split("-")[1]
+                )
+
+                new_number = last_number + 1
+
+            else:
+
+                new_number = 1
+
+            self.work_id = (
+                f"WORK-{new_number:04d}"
+            )
+
+        super().save(*args, **kwargs)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Department, User, Division
+from .models import Department, User, Division, Work
 
 
 class LoginSerializer(serializers.Serializer):
@@ -23,6 +23,8 @@ class DepartmentSerializer(serializers.ModelSerializer):
             "id",
             "name_en",
             "name_hi",
+            "hod_name",
+            "designation",
             "password"
         ]
         read_only_fields = ["id"]
@@ -63,3 +65,64 @@ class DivisionSerializer(serializers.ModelSerializer):
             "name_hi", "head_name", "created_at"
         ]
         read_only_fields = ["id", "created_at", "head_name"]
+
+class WorkSerializer(serializers.ModelSerializer):
+
+    department_name_en = serializers.CharField(
+        source="department.name_en",
+        read_only=True
+    )
+
+    department_name_hi = serializers.CharField(
+        source="department.name_hi",
+        read_only=True
+    )
+
+    division_name_en = serializers.CharField(
+        source="division.name_en",
+        read_only=True
+    )
+
+    division_name_hi = serializers.CharField(
+        source="division.name_hi",
+        read_only=True
+    )
+
+    class Meta:
+
+        model = Work
+
+        fields = [
+            "id",
+            "work_id",
+
+            "department",
+            "department_name_en",
+            "department_name_hi",
+
+            "division",
+            "division_name_en",
+            "division_name_hi",
+
+            "vidhan_sabha",
+            "project_name",
+            "village_name",
+            "head_name",
+            "component",
+            "scheme_type",
+            "work_name",
+
+            "created_at",
+            "updated_at"
+        ]
+
+        read_only_fields = [
+            "id",
+            "work_id",
+            "created_at",
+            "updated_at",
+            "department_name_en",
+            "department_name_hi",
+            "division_name_en",
+            "division_name_hi"
+        ]
