@@ -344,7 +344,7 @@ class WorkAPIView(APIView):
                 IsDepartmentOrITCell()
             ]
 
-        return []
+        return [IsAuthenticated()]
 
     def get(self, request):
 
