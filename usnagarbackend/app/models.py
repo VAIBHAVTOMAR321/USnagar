@@ -217,3 +217,114 @@ class Work(models.Model):
             )
 
         super().save(*args, **kwargs)
+
+class WorkDetail(models.Model):
+
+    work = models.OneToOneField(
+        Work,
+        on_delete=models.CASCADE,
+        related_name="details",
+        to_field="work_id"
+    )
+
+    sanction_date = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    estimated_cost = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+    approved_outlay = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+    dm_level_funds = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+    released_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+    balance_as_on_date = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+    surrendered_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0
+    )
+
+    work_start_date = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    physical_target = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    unit = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    latitude = models.DecimalField(
+        max_digits=12,
+        decimal_places=8,
+        null=True,
+        blank=True
+    )
+
+    longitude = models.DecimalField(
+        max_digits=12,
+        decimal_places=8,
+        null=True,
+        blank=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    def __str__(self):
+        return self.work.work_id
+
+
+class WorkImage(models.Model):
+
+    work = models.ForeignKey(
+        Work,
+        on_delete=models.CASCADE,
+        related_name="images",
+        to_field="work_id"
+    )
+
+    phase_number = models.PositiveIntegerField()
+
+    image = models.ImageField(
+        upload_to="work_images/"
+    )
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+        return f"{self.work.work_id} - Phase {self.phase_number}"

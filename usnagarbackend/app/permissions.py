@@ -14,7 +14,7 @@ class IsITCellOrDepartment(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
-            and request.user.role in ["it_cell", "department"]
+            and request.user.role in ["it_cell", "department", "admin"]
         )
 
 class IsAdminOrITCell(BasePermission):
@@ -62,6 +62,7 @@ class IsDepartmentOrITCell(
             request.user.is_authenticated
             and request.user.role in [
                 "department",
-                "it_cell"
+                "it_cell",
+                "admin"
             ]
         )

@@ -1,6 +1,5 @@
 from rest_framework import serializers
-
-from .models import Department, User, Division, Work
+from .models import Department, User, Division, Work, WorkDetail, WorkImage
 
 
 class LoginSerializer(serializers.Serializer):
@@ -126,3 +125,54 @@ class WorkSerializer(serializers.ModelSerializer):
             "division_name_en",
             "division_name_hi"
         ]
+
+class WorkDetailSerializer(serializers.ModelSerializer):
+    # This maps the 'work' relationship to the 'work_id' string field on the Work model
+    work_id = serializers.SlugRelatedField(
+        source="work",
+        slug_field="work_id",
+        queryset=Work.objects.all()
+    )
+
+    class Meta:
+        model = WorkDetail
+        # Exclude internal 'work' field and show 'work_id' instead
+        exclude = ["work"]
+
+class WorkImageSerializer(serializers.ModelSerializer):
+    # Same approach for images: link by work_id string
+    work_id = serializers.SlugRelatedField(
+        source="work",
+        slug_field="work_id",
+        queryset=Work.objects.all()
+    )
+
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WorkImage
+        fields = [
+            "id",
+            "work_id",
+            "phase_number",
+            "image",
+            "image_url",
+            "uploaded_at"
+        ]
+
+    def get_image_url(
+        self,
+        obj
+    ):
+
+        request = self.context.get(
+            "request"
+        )
+
+        if obj.image:
+
+            return request.build_absolute_uri(
+                obj.image.url
+            )
+
+        return None

@@ -18,9 +18,11 @@ from .serializers import (
     RefreshTokenSerializer,
     DepartmentSerializer,
     DivisionSerializer,
+    WorkDetailSerializer,
+    WorkImageSerializer,
     WorkSerializer
 )
-from .models import Department, Division, Work
+from .models import Department, Division, Work, WorkDetail, WorkImage
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 class LoginAPIView(APIView):
@@ -347,43 +349,30 @@ class WorkAPIView(APIView):
         return [IsAuthenticated()]
 
     def get(self, request):
+        work_id = request.query_params.get("id")
+        user = request.user
 
-        work_id = request.query_params.get(
-            "id"
-        )
+        if user.role in ["admin", "it_cell"]:
+            queryset = Work.objects.all()
+        else:
+            queryset = Work.objects.filter(department__user=user)
 
         if work_id:
+            work = get_object_or_404(queryset, id=work_id)
+            serializer = WorkSerializer(work)
+            return Response(serializer.data)
 
-            work = get_object_or_404(
-                Work,
-                id=work_id
-            )
-
-            serializer = WorkSerializer(
-                work
-            )
-
-            return Response(
-                serializer.data
-            )
-
-        works = Work.objects.all().order_by(
-            "-created_at"
-        )
-
-        serializer = WorkSerializer(
-            works,
-            many=True
-        )
-
-        return Response(
-            serializer.data
-        )
+        works = queryset.order_by("-created_at")
+        serializer = WorkSerializer(works, many=True)
+        return Response(serializer.data)
 
     def post(self, request):
+        data = request.data.copy()
+        if request.user.role == "department" and hasattr(request.user, 'department'):
+            data['department'] = request.user.department.id
 
         serializer = WorkSerializer(
-            data=request.data
+            data=data
         )
 
         serializer.is_valid(
@@ -477,5 +466,160 @@ class WorkAPIView(APIView):
             {
                 "message":
                 "Work deleted successfully"
+            }
+        )
+    
+class WorkDetailAPIView(APIView):
+
+    permission_classes = [
+        IsDepartmentOrITCell
+    ]
+
+    def post(self, request):
+
+        serializer = WorkDetailSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+    def put(self, request):
+
+        work_id = request.data.get(
+            "work_id"
+        )
+
+        detail = get_object_or_404(
+            WorkDetail,
+            work__work_id=work_id
+        )
+
+        serializer = WorkDetailSerializer(
+            detail,
+            data=request.data,
+            partial=True
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        return Response(
+            serializer.data
+        )
+
+    def get(self, request):
+        work_id = request.query_params.get("work_id")
+        user = request.user
+
+        if user.role in ["admin", "it_cell"]:
+            detail = get_object_or_404(WorkDetail, work__work_id=work_id)
+        else:
+            detail = get_object_or_404(
+                WorkDetail, 
+                work__work_id=work_id, 
+                work__department__user=user
+            )
+
+        serializer = WorkDetailSerializer(detail)
+        return Response(serializer.data)
+
+    def delete(self, request):
+
+        work_id = request.data.get(
+            "work_id"
+        )
+
+        detail = get_object_or_404(
+            WorkDetail,
+            work__work_id=work_id
+        )
+
+        detail.delete()
+
+        return Response(
+            {
+                "message":
+                "Deleted successfully"
+            }
+        )
+class WorkImageAPIView(APIView):
+
+    permission_classes = [
+        IsDepartmentOrITCell
+    ]
+
+    def post(self, request):
+
+        serializer = WorkImageSerializer(
+            data=request.data,
+            context={
+                "request": request
+            }
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        return Response(
+            serializer.data,
+            status=201
+        )
+
+    def get(self, request):
+        work_id = request.query_params.get("work_id")
+        user = request.user
+
+        if user.role in ["admin", "it_cell"]:
+            images = WorkImage.objects.filter(work__work_id=work_id)
+        else:
+            images = WorkImage.objects.filter(
+                work__work_id=work_id, 
+                work__department__user=user
+            )
+
+        serializer = WorkImageSerializer(
+            images, 
+            many=True, 
+            context={"request": request}
+        )
+        return Response(serializer.data)
+
+    def delete(self, request):
+        work_id = request.data.get("work_id")
+        phase_number = request.data.get("phase_number")
+
+        if work_id and phase_number:
+            # Find the specific image for this work and phase
+            image = get_object_or_404(
+                WorkImage, 
+                work__work_id=work_id, 
+                phase_number=phase_number
+            )
+        else:
+            # Fallback to internal ID if provided
+            image_id = request.data.get("id")
+            image = get_object_or_404(WorkImage, id=image_id)
+
+        image.delete()
+
+        return Response(
+            {
+                "message":
+                "Image deleted successfully"
             }
         )
